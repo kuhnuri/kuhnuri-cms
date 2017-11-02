@@ -14,4 +14,8 @@ trait Store {
   def update(job: Update): Try[Job]
 
   def delete(id: String): Try[Job]
+
+  def lock(id: String): Try[Job]
+
+  def unlock(id: String): Try[Job]
 }

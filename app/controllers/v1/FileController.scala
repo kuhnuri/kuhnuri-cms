@@ -1,23 +1,14 @@
 package controllers.v1
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import java.nio.file.Files
-import java.time.{LocalDateTime, ZoneOffset}
+import java.io.ByteArrayInputStream
 import javax.inject._
 
-import akka.util.ByteString
 import models._
 import play.api.Logger
-import play.api.http.HttpEntity
-import play.api.libs.functional.syntax._
-import play.api.libs.json.Reads._
-import play.api.libs.json._
 import play.api.mvc._
 import services.Store
 
 import scala.util.{Failure, Success, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 /**
   * Controller for queue client communication
@@ -76,6 +67,20 @@ class FileController @Inject()(queue: Store) extends Controller {
     queue.delete(id) match {
       case Success(job) => Ok
       case Failure(e) => NotFound
+    }
+  }
+
+  def lock(id: String) = Action { request =>
+    queue.lock(id) match {
+      case Success(job) => Ok
+      case Failure(e) => InternalServerError("Failed to lock file: " + e.getMessage)
+    }
+  }
+
+  def unlock(id: String) = Action {
+    queue.unlock(id) match {
+      case Success(job) => Ok
+      case Failure(e) => InternalServerError("Failed to unlock file: " + e.getMessage)
     }
   }
 

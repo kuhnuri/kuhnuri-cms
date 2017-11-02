@@ -1,6 +1,6 @@
 package services
 
-import java.io.{IOException, InputStream}
+import java.io.IOException
 import java.nio.file.{Files, Paths, StandardCopyOption}
 import javax.inject.{Inject, Singleton}
 
@@ -59,6 +59,36 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
       }
     } else {
       Failure(new IOException(s"File $file does not exist"))
+    }
+  }
+
+  private val LOCK_PREFIX = ".lock"
+
+  override def lock(id: String): Try[Job] = {
+    val file = baseDir.resolve(id + LOCK_PREFIX)
+    if (!Files.exists(file)) {
+      try {
+        Files.createFile(file)
+        Success(Job(id))
+      } catch {
+        case e: IOException => Failure(e)
+      }
+    } else {
+      Failure(new IOException(s"File $file already locked"))
+    }
+  }
+
+  override def unlock(id: String): Try[Job] = {
+    val file = baseDir.resolve(id + LOCK_PREFIX)
+    if (Files.exists(file)) {
+      try {
+        Files.delete(file)
+        Success(Job(id))
+      } catch {
+        case e: IOException => Failure(e)
+      }
+    } else {
+      Failure(new IOException(s"File $file not locked"))
     }
   }
 

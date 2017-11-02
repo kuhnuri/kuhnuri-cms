@@ -12,8 +12,8 @@ POST          /api/v1/file/:id        controllers.v1.FileController.update(id)
 PUT           /api/v1/file/:id         controllers.v1.FileController.create(id)
 DELETE        /api/v1/file/:id         controllers.v1.FileController.delete(id)
 
-#POST          /api/v1/work            controllers.v1.WorkController.request
-#PUT           /api/v1/work            controllers.v1.WorkController.submit
+PUT           /api/v1/lock/:id         controllers.v1.FileController.lock(id)
+DELETE        /api/v1/lock/:id         controllers.v1.FileController.unlock(id)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /*file                  controllers.Assets.versioned(path="/public", file: Asset)
