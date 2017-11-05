@@ -18,7 +18,7 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
   override def retrieve(id: String): Option[Resource] =
     Option(baseDir.resolve(id))
       .filter(Files.exists(_))
-      .map(p => new Resource(id, p.toFile))
+      .map(p => Resource(id, p.toFile))
 
   override def create(newJob: Create): Try[Job] = {
     val file = baseDir.resolve(newJob.id)
@@ -84,6 +84,29 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
       try {
         Files.delete(file)
         Success(Job(id))
+      } catch {
+        case e: IOException => Failure(e)
+      }
+    } else {
+      Failure(new IOException(s"File $file not locked"))
+    }
+  }
+
+  override def list(id: String): Try[List[ResourceMetadata]] = {
+    val file = baseDir.resolve(id)
+    if (Files.exists(file)) {
+      try {
+        if (Files.isDirectory(file)) {
+          val resources: List[ResourceMetadata] = file.toFile().listFiles()
+            .map(f => ResourceMetadata(
+              f.getName,
+              if (f.isDirectory) DirectoryType() else ResourceType(),
+              false))
+            .toList
+          Success(resources)
+        } else {
+          Failure(new IOException(s"Directory $file not a directory"))
+        }
       } catch {
         case e: IOException => Failure(e)
       }

@@ -18,4 +18,7 @@ trait Store {
   def lock(id: String): Try[Job]
 
   def unlock(id: String): Try[Job]
+
+  def list(id: String): Try[List[ResourceMetadata]]
+
 }

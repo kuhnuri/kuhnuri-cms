@@ -19,13 +19,7 @@ class FileController @Inject()(queue: Store) extends Controller {
 //  import FileController._
 
   private val logger = Logger(this.getClass)
-
-//  def list = Action {
-//    val queueList = queue.contents
-//
-//    Ok(Json.toJson(queueList))
-//  }
-
+  
   def retrieve(id: String) = Action {
     queue.retrieve(id) match {
       case Some(resource) => {
