@@ -3,23 +3,77 @@ package models
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-sealed case class ResourceMetadata(name: String, resourceType: Type, locked: Boolean)
+trait ResourceMetadata {
+  def name: String
+
+  def resourceType: Type
+}
 
 object ResourceMetadata {
 
   import models.Type._
 
-  implicit val ResourceReads: Reads[ResourceMetadata] = (
+  implicit val fileMetadataReads: Reads[FileMetadata] = (
     (JsPath \ "name").read[String] and
-      (JsPath \ "type").read[Type] and
+      //      (JsPath \ "type").read[Type] and
       (JsPath \ "locked").read[Boolean]
-    ) (ResourceMetadata.apply _)
+    ) (FileMetadata.apply _)
 
-  implicit val jobWrites: Writes[ResourceMetadata] = (
-    (JsPath \ "name").write[String] and
-      (JsPath \ "type").write[Type] and
-      (JsPath \ "locked").write[Boolean]
-    ) (unlift(ResourceMetadata.unapply _))
+  implicit val fileMetadataWrites: Writes[FileMetadata] = new Writes[FileMetadata] {
+    override def writes(file: FileMetadata): JsValue = Json.obj(
+      "name" -> file.name,
+      "type" -> file.resourceType.toString,
+      "locked" -> file.locked
+    )
+  }
+
+  //  implicit val ResourceReads: Reads[ResourceMetadata] = (
+  //    (JsPath \ "name").read[String] and
+  //      (JsPath \ "type").read[Type] and
+  //      (JsPath \ "locked").read[Boolean]
+  //    ) (ResourceMetadata.apply _)
+
+  implicit val directoryMetadataWrites: Writes[DirectoryMetadata] = new Writes[DirectoryMetadata] {
+    override def writes(file: DirectoryMetadata): JsValue = {
+      var res = Json.obj(
+        "name" -> file.name,
+        "type" -> file.resourceType.toString
+      )
+      if (file.children != null) {
+        res = res.+("children" -> JsArray(file.children.map(Json.toJson(_))))
+      }
+      res
+    }
+  }
+
+  implicit val resourceMetadataWrites: Writes[ResourceMetadata] = new Writes[ResourceMetadata] {
+    override def writes(file: ResourceMetadata): JsValue = file match {
+      case d: DirectoryMetadata => Json.toJson(d)(directoryMetadataWrites)
+      case f: FileMetadata => Json.toJson(f)(fileMetadataWrites)
+    }
+
+    //
+    //
+    //      Json.obj(
+    //      "name" -> file.name,
+    //      "type" -> file.resourceType.toString,
+    //      //      "children" -> Json.toJson(file.children)
+    //      "children" -> file match {
+    //        case DirectoryMetadata(name, children) => "foo"//JsArray(children.map(Json.toJson()(_)))
+    //        case FileMetadata => "foo"//JsNull
+    //      }
+    //      //      "locked" -> file.locked
+    //    )
+  }
+
+}
+
+sealed case class FileMetadata(name: String, locked: Boolean) extends ResourceMetadata {
+  override val resourceType = ResourceType()
+}
+
+sealed case class DirectoryMetadata(name: String, children: List[ResourceMetadata]) extends ResourceMetadata {
+  override val resourceType = DirectoryType()
 }
 
 trait Type

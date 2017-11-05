@@ -1,6 +1,6 @@
 package services
 
-import java.io.IOException
+import java.io.{File, FileNotFoundException, IOException}
 import java.nio.file.{Files, Paths, StandardCopyOption}
 import javax.inject.{Inject, Singleton}
 
@@ -92,18 +92,16 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     }
   }
 
-  override def list(id: String): Try[List[ResourceMetadata]] = {
+  override def list(id: String): Try[ResourceMetadata] = {
     val file = baseDir.resolve(id)
     if (Files.exists(file)) {
       try {
         if (Files.isDirectory(file)) {
           val resources: List[ResourceMetadata] = file.toFile().listFiles()
-            .map(f => ResourceMetadata(
-              f.getName,
-              if (f.isDirectory) DirectoryType() else ResourceType(),
-              false))
+            .map(resourceShallow)
             .toList
-          Success(resources)
+          val resource = DirectoryMetadata(file.getFileName.toString, resources)
+          Success(resource)
         } else {
           Failure(new IOException(s"Directory $file not a directory"))
         }
@@ -111,9 +109,20 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
         case e: IOException => Failure(e)
       }
     } else {
-      Failure(new IOException(s"File $file not locked"))
+      Failure(new FileNotFoundException(file.toString))
     }
   }
+
+  private def resourceShallow(f: File): ResourceMetadata =
+    if (f.isDirectory) {
+      DirectoryMetadata(
+        f.getName,
+        null)
+    } else {
+      FileMetadata(
+        f.getName,
+        new File(f.getAbsolutePath + LOCK_PREFIX).exists())
+    }
 
 }
 
