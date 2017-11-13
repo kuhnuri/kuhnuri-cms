@@ -21,6 +21,6 @@ trait Store {
 
   def unlock(id: String): Try[Job]
 
-  def list(id: String): Try[ResourceMetadata]
+  def list(id: String): Try[Option[ResourceMetadata]]
 
 }

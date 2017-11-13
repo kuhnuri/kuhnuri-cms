@@ -105,7 +105,7 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     }
   }
 
-  override def list(id: String): Try[ResourceMetadata] = {
+  override def list(id: String): Try[Option[ResourceMetadata]] = {
     val file = baseDir.resolve(id)
     if (Files.exists(file)) {
       try {
@@ -115,7 +115,7 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
             .map(resourceShallow)
             .toList
           val resource = DirectoryMetadata(getName(file), resources)
-          Success(resource)
+          Success(Some(resource))
         } else {
           Failure(new IOException(s"Directory $file not a directory"))
         }
@@ -123,7 +123,8 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
         case e: IOException => Failure(e)
       }
     } else {
-      Failure(new FileNotFoundException(file.toString))
+      Success(None)
+//      Failure(new FileNotFoundException(file.toString))
     }
   }
 
