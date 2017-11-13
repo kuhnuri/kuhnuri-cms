@@ -1,7 +1,7 @@
 package services
 
 import java.io.{File, FileNotFoundException, IOException}
-import java.nio.file.{Files, Paths, StandardCopyOption}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import javax.inject.{Inject, Singleton}
 
 import models._
@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 class FileStore @Inject()(configuration: Configuration) extends Store {
 
   private val logger = Logger(this.getClass)
-  private val baseDir = configuration.getString("projects.basedir").map(Paths.get(_)).get
+  private val baseDir = configuration.getString("projects.basedir").map(Paths.get(_)).getOrElse(throw new IllegalArgumentException())
 
   override def retrieve(id: String): Option[Resource] =
     Option(baseDir.resolve(id))
@@ -62,10 +62,23 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     }
   }
 
-  private val LOCK_PREFIX = ".lock"
+  private val LOCK_POSTFIX = ".lock"
+
+  override def getLock(id: String): Try[Option[Job]] = {
+    val file = baseDir.resolve(id + LOCK_POSTFIX)
+    if (Files.exists(file)) {
+      try {
+        Success(Some(Job(id)))
+      } catch {
+        case e: IOException => Failure(e)
+      }
+    } else {
+      Success(None)
+    }
+  }
 
   override def lock(id: String): Try[Job] = {
-    val file = baseDir.resolve(id + LOCK_PREFIX)
+    val file = baseDir.resolve(id + LOCK_POSTFIX)
     if (!Files.exists(file)) {
       try {
         Files.createFile(file)
@@ -79,7 +92,7 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
   }
 
   override def unlock(id: String): Try[Job] = {
-    val file = baseDir.resolve(id + LOCK_PREFIX)
+    val file = baseDir.resolve(id + LOCK_POSTFIX)
     if (Files.exists(file)) {
       try {
         Files.delete(file)
@@ -98,9 +111,10 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
       try {
         if (Files.isDirectory(file)) {
           val resources: List[ResourceMetadata] = file.toFile().listFiles()
+            .filter(!_.getName.endsWith(LOCK_POSTFIX))
             .map(resourceShallow)
             .toList
-          val resource = DirectoryMetadata(file.getFileName.toString, resources)
+          val resource = DirectoryMetadata(getName(file), resources)
           Success(resource)
         } else {
           Failure(new IOException(s"Directory $file not a directory"))
@@ -116,13 +130,21 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
   private def resourceShallow(f: File): ResourceMetadata =
     if (f.isDirectory) {
       DirectoryMetadata(
-        f.getName,
+        getName(f),
         null)
     } else {
       FileMetadata(
-        f.getName,
-        new File(f.getAbsolutePath + LOCK_PREFIX).exists())
+        getName(f),
+        new File(f.getAbsolutePath + LOCK_POSTFIX).exists())
     }
+
+  private def getName(f: Path): String = {
+    f.getFileName.toString
+  }
+
+  private def getName(f: File): String = {
+    getName(f.toPath)
+  }
 
 }
 

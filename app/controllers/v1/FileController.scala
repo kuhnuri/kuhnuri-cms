@@ -64,6 +64,14 @@ class FileController @Inject()(queue: Store) extends Controller {
     }
   }
 
+  def getLock(id: String) = Action { request =>
+    queue.getLock(id) match {
+      case Success(Some(job)) => Ok
+      case Success(None) => NotFound
+      case Failure(e) => InternalServerError("Failed to check lock: " + e.getMessage)
+    }
+  }
+
   def lock(id: String) = Action { request =>
     queue.lock(id) match {
       case Success(job) => Ok

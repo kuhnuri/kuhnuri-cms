@@ -15,6 +15,8 @@ trait Store {
 
   def delete(id: String): Try[Job]
 
+  def getLock(id: String): Try[Option[Job]]
+
   def lock(id: String): Try[Job]
 
   def unlock(id: String): Try[Job]
