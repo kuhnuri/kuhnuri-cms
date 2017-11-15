@@ -15,6 +15,8 @@ DELETE        /api/v1/file/*id        controllers.v1.FileController.delete(id)
 GET           /api/v1/list/           controllers.v1.ListController.list(id = "")
 GET           /api/v1/list/*id        controllers.v1.ListController.list(id)
 
+GET           /api/v1/history/*id     controllers.v1.ListController.history(id)
+
 GET           /api/v1/lock/*id        controllers.v1.FileController.getLock(id)
 PUT           /api/v1/lock/*id        controllers.v1.FileController.lock(id)
 DELETE        /api/v1/lock/*id        controllers.v1.FileController.unlock(id)

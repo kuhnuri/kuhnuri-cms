@@ -2,6 +2,7 @@ package services
 
 import java.io.{File, FileNotFoundException, IOException}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
+import java.time.LocalDateTime
 import javax.inject.{Inject, Singleton}
 
 import models._
@@ -125,6 +126,23 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     } else {
       Success(None)
 //      Failure(new FileNotFoundException(file.toString))
+    }
+  }
+
+  override def history(id: String): Try[List[History]] = {
+    val file = baseDir.resolve(id)
+    if (Files.exists(file)) {
+      try {
+        if (!Files.isDirectory(file)) {
+          Success(List(History(id, 1, 1, LocalDateTime.now())))
+        } else {
+          Failure(new IOException(s"Path $file is a directory"))
+        }
+      } catch {
+        case e: IOException => Failure(e)
+      }
+    } else {
+      Success(List.empty)
     }
   }
 

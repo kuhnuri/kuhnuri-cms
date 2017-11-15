@@ -23,4 +23,6 @@ trait Store {
 
   def list(id: String): Try[Option[ResourceMetadata]]
 
+  def history(id: String): Try[List[History]]
+
 }
