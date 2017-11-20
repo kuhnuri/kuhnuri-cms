@@ -13,13 +13,17 @@ import scala.util.{Failure, Success, Try}
 @Singleton
 class FileStore @Inject()(configuration: Configuration) extends Store {
 
+  private val LOCK_POSTFIX = ".lock"
+  private val STAGE_POSTFIX = ".stage"
+
   private val logger = Logger(this.getClass)
   private val baseDir = configuration.getString("projects.basedir").map(Paths.get(_)).getOrElse(throw new IllegalArgumentException())
 
   override def retrieve(id: String): Option[Resource] =
-    Option(baseDir.resolve(id))
+    List(baseDir.resolve(id + STAGE_POSTFIX), baseDir.resolve(id))
       .filter(Files.exists(_))
       .map(p => Resource(id, p.toFile))
+      .headOption
 
   override def create(newJob: Create): Try[Job] = {
     val file = baseDir.resolve(newJob.id)
@@ -36,22 +40,24 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
   }
 
   override def update(update: Update): Try[Job] = {
-    val file = baseDir.resolve(update.id)
-    if (Files.exists(file)) {
+    val lock = baseDir.resolve(update.id + LOCK_POSTFIX)
+    val stage = baseDir.resolve(update.id + STAGE_POSTFIX)
+    if (Files.exists(lock) && Files.exists(stage)) {
       try {
-        Files.copy(update.data, file, StandardCopyOption.REPLACE_EXISTING)
+        Files.copy(update.data, stage, StandardCopyOption.REPLACE_EXISTING)
         Success(Job(update.id))
       } catch {
         case e: IOException => Failure(e)
       }
     } else {
-      Failure(new IOException(s"File $file does not exist"))
+      Failure(new IOException(s"File $stage does not exist"))
     }
   }
 
   override def delete(id: String): Try[Job] = {
     val file = baseDir.resolve(id)
-    if (Files.exists(file)) {
+    val lock = baseDir.resolve(id + LOCK_POSTFIX)
+    if (Files.exists(file) && !Files.exists(lock)) {
       try {
         Files.delete(file)
         Success(Job(id))
@@ -63,11 +69,9 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     }
   }
 
-  private val LOCK_POSTFIX = ".lock"
-
   override def getLock(id: String): Try[Option[Job]] = {
-    val file = baseDir.resolve(id + LOCK_POSTFIX)
-    if (Files.exists(file)) {
+    val lock = baseDir.resolve(id + LOCK_POSTFIX)
+    if (Files.exists(lock)) {
       try {
         Success(Some(Job(id)))
       } catch {
@@ -79,30 +83,36 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
   }
 
   override def lock(id: String): Try[Job] = {
-    val file = baseDir.resolve(id + LOCK_POSTFIX)
-    if (!Files.exists(file)) {
+    val file = baseDir.resolve(id)
+    val lock = baseDir.resolve(id + LOCK_POSTFIX)
+    val stage = baseDir.resolve(id + STAGE_POSTFIX)
+    if (!Files.exists(lock)) {
       try {
-        Files.createFile(file)
+        Files.createFile(lock)
+        Files.copy(file, stage, StandardCopyOption.REPLACE_EXISTING)
         Success(Job(id))
       } catch {
         case e: IOException => Failure(e)
       }
     } else {
-      Failure(new IOException(s"File $file already locked"))
+      Failure(new IOException(s"File $lock already locked"))
     }
   }
 
   override def unlock(id: String): Try[Job] = {
-    val file = baseDir.resolve(id + LOCK_POSTFIX)
-    if (Files.exists(file)) {
+    val file = baseDir.resolve(id)
+    val lock = baseDir.resolve(id + LOCK_POSTFIX)
+    val stage = baseDir.resolve(id + STAGE_POSTFIX)
+    if (Files.exists(lock)) {
       try {
-        Files.delete(file)
+        Files.move(stage, file, StandardCopyOption.REPLACE_EXISTING)
+        Files.delete(lock)
         Success(Job(id))
       } catch {
         case e: IOException => Failure(e)
       }
     } else {
-      Failure(new IOException(s"File $file not locked"))
+      Failure(new IOException(s"File $lock not locked"))
     }
   }
 

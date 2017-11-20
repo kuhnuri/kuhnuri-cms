@@ -8,7 +8,7 @@ GET           /                       controllers.HomeController.index
 #POST          /api/v1/logout          controllers.v1.AuthenticationController.logout
 
 GET           /api/v1/file/*id        controllers.v1.FileController.retrieve(id)
-PUT           /api/v1/file/*id        controllers.v1.FileController.update(id)
+PUT           /api/v1/file/*id        controllers.v1.FileController.update(id, version: Boolean ?= false)
 POST          /api/v1/file/*id        controllers.v1.FileController.create(id)
 DELETE        /api/v1/file/*id        controllers.v1.FileController.delete(id)
 

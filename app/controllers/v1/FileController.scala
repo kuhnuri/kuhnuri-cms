@@ -29,11 +29,11 @@ class FileController @Inject()(queue: Store) extends Controller {
     }
   }
 
-  def update(id: String) = Action { request =>
+  def update(id: String, version: Boolean) = Action { request =>
     request.body.asRaw.flatMap(_.asBytes()) match {
       case Some(bs) => {
         val in = new ByteArrayInputStream(bs.toArray)
-        val res: Try[Job] = queue.update(Update(id, in))
+        val res: Try[Job] = queue.update(Update(id, in, version))
         res match {
           case Success(job) => Ok
           case Failure(e) => e.printStackTrace(); InternalServerError("Failed to update file: " + e.getMessage)
