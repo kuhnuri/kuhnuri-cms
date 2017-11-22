@@ -122,7 +122,7 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
       try {
         if (Files.isDirectory(file)) {
           val resources: List[ResourceMetadata] = file.toFile().listFiles()
-            .filter(!_.getName.endsWith(LOCK_POSTFIX))
+            .filter(fileFilter)
             .map(resourceShallow)
             .toList
           val resource = DirectoryMetadata(getName(file), resources)
@@ -137,6 +137,13 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
       Success(None)
 //      Failure(new FileNotFoundException(file.toString))
     }
+  }
+
+  private def fileFilter(f: File): Boolean = {
+    val name = f.getName
+    !(name.endsWith(LOCK_POSTFIX) ||
+      name.endsWith(STAGE_POSTFIX) ||
+      name.startsWith("."))
   }
 
   override def history(id: String): Try[List[History]] = {
