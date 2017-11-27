@@ -6,6 +6,8 @@ services:
       - /Users/jelovirt/Downloads/dita-demo-content-collection:/opt/workspace
     ports:
       - 9000:9000
+    environment:
+      APPLICATION_SECRET: "j`1L]T7whPk<@2Q:/TLvI^`qKiK^ZL6zyza5lz9yQY>ifmsE8/?II:]?16dTp24:"
     #command:
     #  - "-Dconfig.file=/com-elovirta-kuhnuri-cms-1.0-SNAPSHOT/conf/docker.conf"
 #  redis:
