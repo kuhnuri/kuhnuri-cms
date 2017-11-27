@@ -1,0 +1,12 @@
+version: '3'
+services:
+  web:
+    build: .
+    volumes:
+      - /Users/jelovirt/Downloads/dita-demo-content-collection:/opt/workspace
+    ports:
+      - 9000:9000
+    #command:
+    #  - "-Dconfig.file=/com-elovirta-kuhnuri-cms-1.0-SNAPSHOT/conf/docker.conf"
+#  redis:
+#    image: "redis:alpine"
