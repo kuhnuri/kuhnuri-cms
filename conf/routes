@@ -2,24 +2,28 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET           /                       controllers.HomeController.index
+GET           /                              controllers.HomeController.index
 
 #POST          /api/v1/login           controllers.v1.AuthenticationController.login
 #POST          /api/v1/logout          controllers.v1.AuthenticationController.logout
 
-GET           /api/v1/file/*id        controllers.v1.FileController.retrieve(id)
-PUT           /api/v1/file/*id        controllers.v1.FileController.update(id, version: Boolean ?= false)
-POST          /api/v1/file/*id        controllers.v1.FileController.create(id)
-DELETE        /api/v1/file/*id        controllers.v1.FileController.delete(id)
+GET           /api/v1/file/*id               controllers.v1.FileController.retrieve(id)
+PUT           /api/v1/file/*id               controllers.v1.FileController.update(id, version: Boolean ?= false)
+POST          /api/v1/file/*id               controllers.v1.FileController.create(id)
+DELETE        /api/v1/file/*id               controllers.v1.FileController.delete(id)
 
-GET           /api/v1/list/           controllers.v1.ListController.list(id = "")
-GET           /api/v1/list/*id        controllers.v1.ListController.list(id)
+GET           /api/v1/list/                  controllers.v1.ListController.list(id = "")
+GET           /api/v1/list/*id               controllers.v1.ListController.list(id)
 
-GET           /api/v1/history/*id     controllers.v1.ListController.history(id)
+GET           /api/v1/history/*id            controllers.v1.ListController.history(id)
 
-GET           /api/v1/lock/*id        controllers.v1.FileController.getLock(id)
-PUT           /api/v1/lock/*id        controllers.v1.FileController.lock(id)
-DELETE        /api/v1/lock/*id        controllers.v1.FileController.unlock(id)
+GET           /api/v1/lock/*id               controllers.v1.FileController.getLock(id)
+PUT           /api/v1/lock/*id               controllers.v1.FileController.lock(id)
+DELETE        /api/v1/lock/*id               controllers.v1.FileController.unlock(id)
+
+GET           /api/v1/publication/*id        controllers.v1.PublisherController.retrieve(id: String, pub: String)
+POST          /api/v1/publication/*id        controllers.v1.PublisherController.create(id)
+DELETE        /api/v1/publication/*id        controllers.v1.PublisherController.delete(id, pub: String)
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /*file                  controllers.Assets.versioned(path="/public", file: Asset)
+GET           /*file                         controllers.Assets.versioned(path="/public", file: Asset)

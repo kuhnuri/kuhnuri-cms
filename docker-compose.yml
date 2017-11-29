@@ -1,6 +1,6 @@
 version: '3'
 services:
-  web:
+  cms:
     build: .
     volumes:
       - /Users/jelovirt/Downloads/dita-demo-content-collection:/opt/workspace
