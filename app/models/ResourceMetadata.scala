@@ -16,13 +16,15 @@ object ResourceMetadata {
   implicit val fileMetadataReads: Reads[FileMetadata] = (
     (JsPath \ "name").read[String] and
       //      (JsPath \ "type").read[Type] and
-      (JsPath \ "locked").read[Boolean]
+      (JsPath \ "locked").read[Boolean] and
+      (JsPath \ "path").read[String]
     ) (FileMetadata.apply _)
 
   implicit val fileMetadataWrites: Writes[FileMetadata] = new Writes[FileMetadata] {
     override def writes(file: FileMetadata): JsValue = Json.obj(
       "name" -> file.name,
       "type" -> file.resourceType.toString,
+      "path" -> file.path,
       "locked" -> file.locked
     )
   }
@@ -37,6 +39,7 @@ object ResourceMetadata {
     override def writes(file: DirectoryMetadata): JsValue = {
       var res = Json.obj(
         "name" -> file.name,
+        "path" -> file.path,
         "type" -> file.resourceType.toString
       )
       if (file.children != null) {
@@ -68,11 +71,11 @@ object ResourceMetadata {
 
 }
 
-sealed case class FileMetadata(name: String, locked: Boolean) extends ResourceMetadata {
+sealed case class FileMetadata(name: String, locked: Boolean, path: String) extends ResourceMetadata {
   override val resourceType = ResourceType()
 }
 
-sealed case class DirectoryMetadata(name: String, children: List[ResourceMetadata]) extends ResourceMetadata {
+sealed case class DirectoryMetadata(name: String, children: List[ResourceMetadata], path: String) extends ResourceMetadata {
   override val resourceType = DirectoryType()
 }
 

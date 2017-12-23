@@ -125,7 +125,7 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
             .filter(fileFilter)
             .map(resourceShallow)
             .toList
-          val resource = DirectoryMetadata(getName(file), resources)
+          val resource = DirectoryMetadata(getName(file), resources, id)
           Success(Some(resource))
         } else {
           Failure(new IOException(s"Directory $file not a directory"))
@@ -167,11 +167,13 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     if (f.isDirectory) {
       DirectoryMetadata(
         getName(f),
-        null)
+        null,
+        baseDir.relativize(f.toPath).toString)
     } else {
       FileMetadata(
         getName(f),
-        new File(f.getAbsolutePath + LOCK_POSTFIX).exists())
+        new File(f.getAbsolutePath + LOCK_POSTFIX).exists(),
+        baseDir.relativize(f.toPath).toString)
     }
 
   private def getName(f: Path): String = {

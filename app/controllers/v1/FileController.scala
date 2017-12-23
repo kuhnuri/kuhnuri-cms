@@ -5,6 +5,7 @@ import javax.inject._
 
 import models._
 import play.api.Logger
+import play.api.libs.MimeTypes
 import play.api.mvc._
 import services.Store
 
@@ -23,7 +24,9 @@ class FileController @Inject()(queue: Store) extends Controller {
   def retrieve(id: String) = Action {
     queue.retrieve(id) match {
       case Some(resource) => {
-        Ok.sendFile(resource.data, false).as("application/xml")
+        val mimeType = MimeTypes.forFileName(resource.id).getOrElse("application/xml")
+        Ok.sendFile(resource.data, false)
+          .as(mimeType)
       }
       case None => NotFound
     }
