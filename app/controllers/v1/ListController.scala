@@ -8,9 +8,9 @@ import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc._
 import services.Store
-import models.History
+import models.{History, ProjectMetadata}
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import models.ResourceMetadata._
 import models.History._
 
@@ -22,8 +22,17 @@ class ListController @Inject()(queue: Store) extends Controller {
 
   private val logger = Logger(this.getClass)
 
-  def list(id: String) = Action {
-    queue.list(id) match {
+  def projects() = Action {
+    queue.projects() match {
+//      case Success(List.empty) => NotFound
+      case Success(projects) => Ok(Json.toJson(projects))
+      case Failure(e: FileNotFoundException) => NotFound(e.getMessage)
+      case Failure(e) => InternalServerError(e.getMessage)
+    }
+  }
+
+  def list(project: String, id: String) = Action {
+    queue.list(project, id) match {
       case Success(Some(resourceMetadata)) => Ok(Json.toJson(resourceMetadata))
       case Success(None) => NotFound
       case Failure(e: FileNotFoundException) => NotFound(e.getMessage)
@@ -31,8 +40,8 @@ class ListController @Inject()(queue: Store) extends Controller {
     }
   }
 
-  def history(id: String) = Action {
-    queue.history(id) match {
+  def history(project: String, id: String) = Action {
+    queue.history(project, id) match {
       case Success(history) => Ok(Json.toJson(history))
       case Failure(e: FileNotFoundException) => NotFound(e.getMessage)
       case Failure(e) => InternalServerError(e.getMessage)

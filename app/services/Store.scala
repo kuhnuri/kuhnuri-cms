@@ -5,24 +5,26 @@ import models._
 import scala.util.Try
 
 trait Store {
-  def retrieve(id: String): Option[Resource]
+  def retrieve(project: String, id: String): Option[Resource]
 
-  def create(job: Create): Try[Job]
+  def create(project: String, job: Create): Try[Job]
 
 //  def contents(): List[Job]
 
-  def update(job: Update): Try[Job]
+  def update(project: String, job: Update): Try[Job]
 
-  def delete(id: String): Try[Job]
+  def delete(project: String, id: String): Try[Job]
 
-  def getLock(id: String): Try[Option[Job]]
+  def getLock(project: String, id: String): Try[Option[Job]]
 
-  def lock(id: String): Try[Job]
+  def lock(project: String, id: String): Try[Job]
 
-  def unlock(id: String): Try[Job]
+  def unlock(project: String, id: String): Try[Job]
 
-  def list(id: String): Try[Option[ResourceMetadata]]
+  def projects(): Try[List[ProjectMetadata]]
 
-  def history(id: String): Try[List[History]]
+  def list(project: String, id: String): Try[Option[ResourceMetadata]]
+
+  def history(project: String, id: String): Try[List[History]]
 
 }

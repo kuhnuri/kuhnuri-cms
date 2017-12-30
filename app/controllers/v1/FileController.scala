@@ -21,8 +21,8 @@ class FileController @Inject()(queue: Store) extends Controller {
 
   private val logger = Logger(this.getClass)
   
-  def retrieve(id: String) = Action {
-    queue.retrieve(id) match {
+  def retrieve(project: String, id: String) = Action {
+    queue.retrieve(project, id) match {
       case Some(resource) => {
         val mimeType = MimeTypes.forFileName(resource.id).getOrElse("application/xml")
         Ok.sendFile(resource.data, false)
@@ -32,11 +32,11 @@ class FileController @Inject()(queue: Store) extends Controller {
     }
   }
 
-  def update(id: String, version: Boolean) = Action { request =>
+  def update(project: String, id: String, version: Boolean) = Action { request =>
     request.body.asRaw.flatMap(_.asBytes()) match {
       case Some(bs) => {
         val in = new ByteArrayInputStream(bs.toArray)
-        val res: Try[Job] = queue.update(Update(id, in, version))
+        val res: Try[Job] = queue.update(project, Update(id, in, version))
         res match {
           case Success(job) => Ok
           case Failure(e) => e.printStackTrace(); InternalServerError("Failed to update file: " + e.getMessage)
@@ -46,11 +46,11 @@ class FileController @Inject()(queue: Store) extends Controller {
     }
   }
 
-  def create(id: String) = Action { request =>
+  def create(project: String, id: String) = Action { request =>
     request.body.asRaw.flatMap(_.asBytes()) match {
       case Some(bs) => {
         val in = new ByteArrayInputStream(bs.toArray)
-        val res: Try[Job] = queue.create(Create(id, in))
+        val res: Try[Job] = queue.create(project, Create(id, in))
         res match {
           case Success(job) => Ok
           case Failure(e) => InternalServerError("Failed to create file: " + e.getMessage)
@@ -60,30 +60,30 @@ class FileController @Inject()(queue: Store) extends Controller {
     }
   }
 
-  def delete(id: String) = Action {
-    queue.delete(id) match {
+  def delete(project: String, id: String) = Action {
+    queue.delete(project, id) match {
       case Success(job) => Ok
       case Failure(e) => NotFound
     }
   }
 
-  def getLock(id: String) = Action { request =>
-    queue.getLock(id) match {
+  def getLock(project: String, id: String) = Action { request =>
+    queue.getLock(project, id) match {
       case Success(Some(job)) => Ok
       case Success(None) => NotFound
       case Failure(e) => InternalServerError("Failed to check lock: " + e.getMessage)
     }
   }
 
-  def lock(id: String) = Action { request =>
-    queue.lock(id) match {
+  def lock(project: String, id: String) = Action { request =>
+    queue.lock(project, id) match {
       case Success(job) => Ok
       case Failure(e) => InternalServerError("Failed to lock file: " + e.getMessage)
     }
   }
 
-  def unlock(id: String) = Action {
-    queue.unlock(id) match {
+  def unlock(project: String, id: String) = Action {
+    queue.unlock(project, id) match {
       case Success(job) => Ok
       case Failure(e) => InternalServerError("Failed to unlock file: " + e.getMessage)
     }

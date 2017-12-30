@@ -49,8 +49,23 @@ object ResourceMetadata {
     }
   }
 
+  implicit val projectMetadataWrites: Writes[ProjectMetadata] = new Writes[ProjectMetadata] {
+    override def writes(file: ProjectMetadata): JsValue = {
+      var res = Json.obj(
+        "name" -> file.name,
+        "path" -> file.path,
+        "type" -> file.resourceType.toString
+      )
+      if (file.children != null) {
+        res = res.+("children" -> JsArray(file.children.map(Json.toJson(_))))
+      }
+      res
+    }
+  }
+
   implicit val resourceMetadataWrites: Writes[ResourceMetadata] = new Writes[ResourceMetadata] {
     override def writes(file: ResourceMetadata): JsValue = file match {
+      case p: ProjectMetadata => Json.toJson(p)(projectMetadataWrites)
       case d: DirectoryMetadata => Json.toJson(d)(directoryMetadataWrites)
       case f: FileMetadata => Json.toJson(f)(fileMetadataWrites)
     }
@@ -79,12 +94,27 @@ sealed case class DirectoryMetadata(name: String, children: List[ResourceMetadat
   override val resourceType = DirectoryType()
 }
 
+sealed case class ProjectMetadata(name: String, children: List[ResourceMetadata], path: String, translations: Option[Translations]) extends ResourceMetadata {
+  override val resourceType = ProjectType()
+}
+
+sealed case class Translations(master: String, translations: List[String])
+
+sealed case class ProjectConfiguration(val master: Option[String])
+
+object ProjectConfiguration {
+  implicit val projectConfigurationReads: Reads[ProjectConfiguration] =
+    (JsPath \ "master").readNullable[String]
+      .map { name => new ProjectConfiguration(name) }
+}
+
 trait Type
 
 object Type {
   implicit val resourceReads: Reads[Type] =
     Reads[Type](j => try {
       JsSuccess(j.as[JsString].value match {
+        case "PROJECT" => ProjectType()
         case "RESOURCE" => ResourceType()
         case "DIRECTORY" => DirectoryType()
         case v => throw new IllegalArgumentException(v.toString)
@@ -103,4 +133,8 @@ sealed case class ResourceType() extends Type {
 
 sealed case class DirectoryType() extends Type {
   override def toString = "DIRECTORY"
+}
+
+sealed case class ProjectType() extends Type {
+  override def toString = "PROJECT"
 }
