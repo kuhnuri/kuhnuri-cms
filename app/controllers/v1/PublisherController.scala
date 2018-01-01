@@ -5,7 +5,7 @@ import javax.inject._
 
 import models.History._
 import models.{Create, Job}
-import models.ResourceMetadata._
+import models.Node._
 import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc._

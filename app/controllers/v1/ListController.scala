@@ -8,10 +8,10 @@ import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc._
 import services.Store
-import models.{History, ProjectMetadata}
+import models.{History, Project}
 
 import scala.util.{Failure, Success, Try}
-import models.ResourceMetadata._
+import models.Node._
 import models.History._
 
 /**
@@ -33,6 +33,15 @@ class ListController @Inject()(queue: Store) extends Controller {
 
   def list(project: String, id: String) = Action {
     queue.list(project, id) match {
+      case Success(Some(resourceMetadata)) => Ok(Json.toJson(resourceMetadata))
+      case Success(None) => NotFound
+      case Failure(e: FileNotFoundException) => NotFound(e.getMessage)
+      case Failure(e) => InternalServerError(e.getMessage)
+    }
+  }
+
+  def info(project: String, id: String) = Action {
+    queue.info(project, id) match {
       case Success(Some(resourceMetadata)) => Ok(Json.toJson(resourceMetadata))
       case Success(None) => NotFound
       case Failure(e: FileNotFoundException) => NotFound(e.getMessage)

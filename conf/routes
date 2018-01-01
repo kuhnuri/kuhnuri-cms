@@ -2,30 +2,32 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET           /                                controllers.HomeController.index
+GET           /                                   controllers.HomeController.index
 
 #POST          /api/v1/login           controllers.v1.AuthenticationController.login
 #POST          /api/v1/logout          controllers.v1.AuthenticationController.logout
 
-GET           /api/v1/file/:project/*id                 controllers.v1.FileController.retrieve(project, id)
-PUT           /api/v1/file/:project/*id                 controllers.v1.FileController.update(project, id, version: Boolean ?= false)
-POST          /api/v1/file/:project/*id                 controllers.v1.FileController.create(project, id)
-DELETE        /api/v1/file/:project/*id                 controllers.v1.FileController.delete(project, id)
+GET           /api/v1/file/:project/*id           controllers.v1.FileController.retrieve(project, id)
+PUT           /api/v1/file/:project/*id           controllers.v1.FileController.update(project, id, version: Boolean ?= false)
+POST          /api/v1/file/:project/*id           controllers.v1.FileController.create(project, id)
+DELETE        /api/v1/file/:project/*id           controllers.v1.FileController.delete(project, id)
 
-GET           /api/v1/list/                    controllers.v1.ListController.projects()
-GET           /api/v1/list/:project            controllers.v1.ListController.list(project, id="")
-GET           /api/v1/list/:project/           controllers.v1.ListController.list(project, id="")
-GET           /api/v1/list/:project/*id        controllers.v1.ListController.list(project, id)
+GET           /api/v1/list/                       controllers.v1.ListController.projects()
+GET           /api/v1/list/:project               controllers.v1.ListController.list(project, id="")
+GET           /api/v1/list/:project/              controllers.v1.ListController.list(project, id="")
+GET           /api/v1/list/:project/*id           controllers.v1.ListController.list(project, id)
 
-GET           /api/v1/history/:project/*id              controllers.v1.ListController.history(project, id)
+GET           /api/v1/info/:project/*id           controllers.v1.ListController.info(project, id)
 
-GET           /api/v1/lock/:project/*id                 controllers.v1.FileController.getLock(project, id)
-PUT           /api/v1/lock/:project/*id                 controllers.v1.FileController.lock(project, id)
-DELETE        /api/v1/lock/:project/*id                 controllers.v1.FileController.unlock(project, id)
+GET           /api/v1/history/:project/*id        controllers.v1.ListController.history(project, id)
 
-GET           /api/v1/publication/*id          controllers.v1.PublisherController.retrieve(id: String, pub: String)
-POST          /api/v1/publication/*id          controllers.v1.PublisherController.create(id)
-DELETE        /api/v1/publication/*id          controllers.v1.PublisherController.delete(id, pub: String)
+GET           /api/v1/lock/:project/*id           controllers.v1.FileController.getLock(project, id)
+PUT           /api/v1/lock/:project/*id           controllers.v1.FileController.lock(project, id)
+DELETE        /api/v1/lock/:project/*id           controllers.v1.FileController.unlock(project, id)
+
+GET           /api/v1/publication/*id             controllers.v1.PublisherController.retrieve(id: String, pub: String)
+POST          /api/v1/publication/*id             controllers.v1.PublisherController.create(id)
+DELETE        /api/v1/publication/*id             controllers.v1.PublisherController.delete(id, pub: String)
 
 # Map static resources from the /public folder to the /assets URL path
-GET           /*file                           controllers.Assets.versioned(path="/public", file: Asset)
+GET           /*file                              controllers.Assets.versioned(path="/public", file: Asset)

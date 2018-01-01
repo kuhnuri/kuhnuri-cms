@@ -2,7 +2,7 @@ package services
 
 import java.io.{File, IOException}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneId}
 import javax.inject.{Inject, Singleton}
 
 import models.ProjectConfiguration._
@@ -20,15 +20,18 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
 
   private val logger = Logger(this.getClass)
   private val baseDir = configuration.getString("projects.basedir").map(Paths.get(_)).getOrElse(throw new IllegalArgumentException())
-  private val projectMetadatas: Map[String, ProjectMetadata] = readProjects(baseDir)
+  private val projectMetadatas: Map[String, Project] = readProjects(baseDir)
 
-  private def readProjects(baseDir: Path): Map[String, ProjectMetadata] = {
+  private def readProjects(baseDir: Path): Map[String, Project] = {
     if (Files.exists(baseDir)) {
       try {
         if (Files.isDirectory(baseDir)) {
           baseDir.toFile().listFiles()
             .filter(f => f.isDirectory && fileFilter(f))
-            .map(f => f.getName -> readProject(f))
+            .map(f => {
+              val p = readProject(f)
+              p.path -> p
+            })
             .toMap
         } else {
           throw new IllegalArgumentException(s"$baseDir not a directory")
@@ -41,7 +44,7 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     }
   }
 
-  private def readProject(f: File): ProjectMetadata = {
+  private def readProject(f: File): Project = {
     val config = f.toPath.resolve(".project.json")
     val projectConfiguration: ProjectConfiguration =
       if (Files.exists(config)) {
@@ -63,10 +66,10 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
       .filter(fileFilter)
       .map(resourceShallow(root.toPath, _))
       .toList
-    ProjectMetadata(
-      getName(f),
-      children,
+    Project(
       f.getName,
+      children,
+      f.getName.toLowerCase,
       translations
     )
   }
@@ -198,7 +201,7 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     }
   }
 
-  override def projects(): Try[List[ProjectMetadata]] = Success(projectMetadatas.values.toList)
+  override def projects(): Try[List[Project]] = Success(projectMetadatas.values.toList)
 
   private def projectRootDir(project: String): Option[Path] = {
     projectMetadatas.get(project) match {
@@ -209,14 +212,14 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     }
   }
 
-  private def projectRootDir(project: ProjectMetadata): Path = {
+  private def projectRootDir(project: Project): Path = {
     project.translations match {
       case Some(translations) => baseDir.resolve(project.path).resolve(translations.master)
       case None => baseDir.resolve(project.path)
     }
   }
 
-  override def list(project: String, id: String): Try[Option[ResourceMetadata]] = {
+  override def list(project: String, id: String): Try[Option[Node]] = {
     projectMetadatas.get(project) match {
       case Some(project) => {
         val projectDir = projectRootDir(project)
@@ -224,11 +227,11 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
         if (Files.exists(file)) {
           try {
             if (Files.isDirectory(file)) {
-              val resources: List[ResourceMetadata] = file.toFile().listFiles()
+              val resources: List[Node] = file.toFile().listFiles()
                 .filter(fileFilter)
                 .map(resourceShallow(projectDir, _))
                 .toList
-              val resource = DirectoryMetadata(getName(file), resources, id)
+              val resource = DirectoryNode(getName(file), resources, id)
               Success(Some(resource))
             } else {
               Failure(new IOException(s"Directory $file not a directory"))
@@ -236,6 +239,27 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
           } catch {
             case e: IOException => Failure(e)
           }
+        } else {
+          Success(None)
+        }
+      }
+      case None => Success(None)
+    }
+  }
+
+  override def info(project: String, id: String): Try[Option[Info]] = {
+    projectMetadatas.get(project) match {
+      case Some(project) => {
+        val projectDir = projectRootDir(project)
+        val file = projectDir.resolve(id)
+        if (Files.exists(file)) {
+          val modified = LocalDateTime.ofInstant(Files.getLastModifiedTime(file).toInstant, ZoneId.systemDefault())
+          val resource = Info(
+            getName(file),
+            id,
+            "Stig",
+            modified)
+          Success(Some(resource))
         } else {
           Success(None)
         }
@@ -273,14 +297,14 @@ class FileStore @Inject()(configuration: Configuration) extends Store {
     }
   }
 
-  private def resourceShallow(projectDir: Path, f: File): ResourceMetadata =
+  private def resourceShallow(projectDir: Path, f: File): Node =
     if (f.isDirectory) {
-      DirectoryMetadata(
+      DirectoryNode(
         getName(f),
         null,
         projectDir.relativize(f.toPath).toString)
     } else {
-      FileMetadata(
+      FileNode(
         getName(f),
         new File(f.getAbsolutePath + LOCK_POSTFIX).exists(),
         projectDir.relativize(f.toPath).toString)

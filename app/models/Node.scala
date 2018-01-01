@@ -1,27 +1,41 @@
 package models
 
+import java.time.LocalDateTime
+
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-trait ResourceMetadata {
+trait Node {
   def name: String
+
+  def path: String
 
   def resourceType: Type
 }
 
-object ResourceMetadata {
+trait Parent {
+  def children: List[Node]
+}
+
+trait Metadata {
+  def created: LocalDateTime
+
+  def author: String
+}
+
+object Node {
 
   import models.Type._
 
-  implicit val fileMetadataReads: Reads[FileMetadata] = (
+  implicit val fileMetadataReads: Reads[FileNode] = (
     (JsPath \ "name").read[String] and
       //      (JsPath \ "type").read[Type] and
       (JsPath \ "locked").read[Boolean] and
       (JsPath \ "path").read[String]
-    ) (FileMetadata.apply _)
+    ) (FileNode.apply _)
 
-  implicit val fileMetadataWrites: Writes[FileMetadata] = new Writes[FileMetadata] {
-    override def writes(file: FileMetadata): JsValue = Json.obj(
+  implicit val fileMetadataWrites: Writes[FileNode] = new Writes[FileNode] {
+    override def writes(file: FileNode): JsValue = Json.obj(
       "name" -> file.name,
       "type" -> file.resourceType.toString,
       "path" -> file.path,
@@ -35,8 +49,8 @@ object ResourceMetadata {
   //      (JsPath \ "locked").read[Boolean]
   //    ) (ResourceMetadata.apply _)
 
-  implicit val directoryMetadataWrites: Writes[DirectoryMetadata] = new Writes[DirectoryMetadata] {
-    override def writes(file: DirectoryMetadata): JsValue = {
+  implicit val directoryMetadataWrites: Writes[DirectoryNode] = new Writes[DirectoryNode] {
+    override def writes(file: DirectoryNode): JsValue = {
       var res = Json.obj(
         "name" -> file.name,
         "path" -> file.path,
@@ -49,8 +63,8 @@ object ResourceMetadata {
     }
   }
 
-  implicit val projectMetadataWrites: Writes[ProjectMetadata] = new Writes[ProjectMetadata] {
-    override def writes(file: ProjectMetadata): JsValue = {
+  implicit val projectMetadataWrites: Writes[Project] = new Writes[Project] {
+    override def writes(file: Project): JsValue = {
       var res = Json.obj(
         "name" -> file.name,
         "path" -> file.path,
@@ -63,11 +77,12 @@ object ResourceMetadata {
     }
   }
 
-  implicit val resourceMetadataWrites: Writes[ResourceMetadata] = new Writes[ResourceMetadata] {
-    override def writes(file: ResourceMetadata): JsValue = file match {
-      case p: ProjectMetadata => Json.toJson(p)(projectMetadataWrites)
-      case d: DirectoryMetadata => Json.toJson(d)(directoryMetadataWrites)
-      case f: FileMetadata => Json.toJson(f)(fileMetadataWrites)
+  implicit val resourceMetadataWrites: Writes[Node] = new Writes[Node] {
+    override def writes(file: Node): JsValue = file match {
+      case p: Project => Json.toJson(p)(projectMetadataWrites)
+      case d: DirectoryNode => Json.toJson(d)(directoryMetadataWrites)
+      case f: FileNode => Json.toJson(f)(fileMetadataWrites)
+      case f: Info => Json.toJson(f)(infoWrites)
     }
 
     //
@@ -84,17 +99,27 @@ object ResourceMetadata {
     //    )
   }
 
+    implicit val infoWrites: Writes[Info] = (
+      (JsPath \ "name").write[String] and
+        (JsPath \ "path").write[String] and
+        (JsPath \ "author").write[String] and
+        (JsPath \ "created").write[LocalDateTime]
+      ) (unlift(Info.unapply _))
 }
 
-sealed case class FileMetadata(name: String, locked: Boolean, path: String) extends ResourceMetadata {
+sealed case class Info(name: String, path: String, author: String, created: LocalDateTime) extends Node with Metadata {
   override val resourceType = ResourceType()
 }
 
-sealed case class DirectoryMetadata(name: String, children: List[ResourceMetadata], path: String) extends ResourceMetadata {
+sealed case class FileNode(name: String, locked: Boolean, path: String) extends Node {
+  override val resourceType = ResourceType()
+}
+
+sealed case class DirectoryNode(name: String, children: List[Node], path: String) extends Node with Parent {
   override val resourceType = DirectoryType()
 }
 
-sealed case class ProjectMetadata(name: String, children: List[ResourceMetadata], path: String, translations: Option[Translations]) extends ResourceMetadata {
+sealed case class Project(name: String, children: List[Node], path: String, translations: Option[Translations]) extends Node with Parent {
   override val resourceType = ProjectType()
 }
 

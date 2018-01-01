@@ -21,9 +21,11 @@ trait Store {
 
   def unlock(project: String, id: String): Try[Job]
 
-  def projects(): Try[List[ProjectMetadata]]
+  def projects(): Try[List[Project]]
 
-  def list(project: String, id: String): Try[Option[ResourceMetadata]]
+  def list(project: String, id: String): Try[Option[Node]]
+
+  def info(project: String, id: String): Try[Option[Node]]
 
   def history(project: String, id: String): Try[List[History]]
 
